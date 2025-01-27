@@ -1,9 +1,10 @@
 local plr = game.Players.LocalPlayer
 local mouse = plr:GetMouse()
+local userInputService = game:GetService("UserInputService")  -- Get the UserInputService
 
 local player = plr
 local torso, Core, Weld, flying, speed = nil, nil, nil, false, 10
-local keys = {a=false, d=false, w=false, s=false}
+local keys = {a=false, d=false, w=false, s=false, up=false, down=false}
 local e1, e2
 
 local function setupFlying()
@@ -39,7 +40,7 @@ local function startFlying()
         player.Character.Humanoid.PlatformStand = true
         local new = gyro.cframe - gyro.cframe.p + pos.position
 
-        if not (keys.w or keys.s or keys.a or keys.d) then
+        if not (keys.w or keys.s or keys.a or keys.d or keys.up or keys.down) then
             speed = 5
         end
 
@@ -54,6 +55,12 @@ local function startFlying()
         end
         if keys.a then
             new = new * CFrame.new(-speed, 0, 0)
+        end
+        if keys.up then
+            new = new + Vector3.new(0, speed, 0)  -- Move up
+        end
+        if keys.down then
+            new = new - Vector3.new(0, speed, 0)  -- Move down
         end
 
         pos.position = new.p
@@ -73,40 +80,55 @@ local function startFlying()
     speed = 10
 end
 
-local function onKeyDown(key)
+local function onInputBegan(input, gameProcessed)
+    if gameProcessed then return end  -- Ignore input if it's already processed by the game (e.g., UI focus)
+
     if not torso or not torso.Parent then
         flying = false
         e1:disconnect()
         e2:disconnect()
         return
     end
-    if key == "w" then
-        keys.w = true
-    elseif key == "s" then
-        keys.s = true
-    elseif key == "a" then
-        keys.a = true
-    elseif key == "d" then
-        keys.d = true
-    elseif key == "x" then
-        if flying then
-            flying = false
-        else
-            flying = true
-            startFlying()
+
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.W then
+            keys.w = true
+        elseif input.KeyCode == Enum.KeyCode.S then
+            keys.s = true
+        elseif input.KeyCode == Enum.KeyCode.A then
+            keys.a = true
+        elseif input.KeyCode == Enum.KeyCode.D then
+            keys.d = true
+        elseif input.KeyCode == Enum.KeyCode.Space then
+            keys.up = true  -- Move up when Space is pressed
+        elseif input.KeyCode == Enum.KeyCode.LeftControl then
+            keys.down = true  -- Move down when LeftControl is pressed
+        elseif input.KeyCode == Enum.KeyCode.X then
+            if flying then
+                flying = false
+            else
+                flying = true
+                startFlying()
+            end
         end
     end
 end
 
-local function onKeyUp(key)
-    if key == "w" then
-        keys.w = false
-    elseif key == "s" then
-        keys.s = false
-    elseif key == "a" then
-        keys.a = false
-    elseif key == "d" then
-        keys.d = false
+local function onInputEnded(input)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.W then
+            keys.w = false
+        elseif input.KeyCode == Enum.KeyCode.S then
+            keys.s = false
+        elseif input.KeyCode == Enum.KeyCode.A then
+            keys.a = false
+        elseif input.KeyCode == Enum.KeyCode.D then
+            keys.d = false
+        elseif input.KeyCode == Enum.KeyCode.Space then
+            keys.up = false  -- Stop moving up when Space is released
+        elseif input.KeyCode == Enum.KeyCode.LeftControl then
+            keys.down = false  -- Stop moving down when LeftControl is released
+        end
     end
 end
 
@@ -119,6 +141,6 @@ end)
 -- Initialize for first time
 setupFlying()
 
-e1 = mouse.KeyDown:connect(onKeyDown)
-e2 = mouse.KeyUp:connect(onKeyUp)
-
+-- Connect input events
+userInputService.InputBegan:Connect(onInputBegan)
+userInputService.InputEnded:Connect(onInputEnded)
